@@ -63,8 +63,14 @@ public static class SettingsStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
-    public static string DataDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhichToPaste");
+    /// <summary>
+    /// 数据目录。默认 %APPDATA%\WhichToPaste；设了环境变量 WHICTOPASTE_HOME 就改用
+    /// 它，方便便携部署，也让自检可以指向临时目录而不碰真实数据。
+    /// </summary>
+    public static string DataDirectory { get; } =
+        Environment.GetEnvironmentVariable("WHICTOPASTE_HOME") is { Length: > 0 } custom
+            ? Path.GetFullPath(custom)
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WhichToPaste");
 
     public static string FilePath => Path.Combine(DataDirectory, "settings.json");
 

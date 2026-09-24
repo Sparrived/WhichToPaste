@@ -25,4 +25,9 @@
     <Using Include="System.IO" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 自检项目要直接验 ImageStore / HistoryStore 这类内部实现 -->
+    <InternalsVisibleTo Include="WhichToPaste.Tests" />
+  </ItemGroup>
+
 </Project>
