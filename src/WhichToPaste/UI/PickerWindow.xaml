@@ -33,7 +33,7 @@
                      Margin="10,0,10,6" MaxHeight="352">
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:ClipItem}">
-                        <Grid Height="46" Margin="4,0,4,0">
+                        <Grid Height="50" Margin="4,0,4,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
@@ -41,11 +41,12 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- 左侧竖条：越靠上（越新）越实，把"新到旧"变成看得见的结构 -->
-                            <Border Width="3" CornerRadius="2" Margin="8,12,0,12"
+                            <Border Width="3" CornerRadius="2" Margin="8,13,0,13"
                                     Background="{Binding Path=(TextElement.Foreground), RelativeSource={RelativeSource Self}}"
                                     Opacity="{Binding RankOpacity}" />
 
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,10,0"
+                            <!-- 文本：单行预览 + 多行徽章 -->
+                            <StackPanel x:Name="TextRow" Grid.Column="1" Orientation="Horizontal" Margin="12,0,10,0"
                                         VerticalAlignment="Center">
                                 <Border x:Name="MultiBadge" CornerRadius="5" BorderThickness="1" Padding="5,1"
                                         Margin="0,0,8,0" VerticalAlignment="Center" Opacity="0.75" Visibility="Collapsed"
@@ -56,12 +57,51 @@
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
 
+                            <!-- 文件：文档图标 + 文件名 + 所在目录 -->
+                            <Grid x:Name="FileRow" Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center"
+                                  Visibility="Collapsed">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Viewbox Width="15" Height="17" VerticalAlignment="Center">
+                                    <Path Stroke="{DynamicResource OnSurfaceVariantBrush}" StrokeThickness="1.3"
+                                          StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          Data="M2,1 H9.5 L14,5.5 V19 H2 Z M9.5,1.2 V5.5 H13.8" />
+                                </Viewbox>
+                                <StackPanel Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontSize="13.5" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.6" Margin="0,1,0,0"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 图片：缩略图 + 尺寸 -->
+                            <StackPanel x:Name="ImageRow" Grid.Column="1" Orientation="Horizontal" Margin="12,0,10,0"
+                                        VerticalAlignment="Center" Visibility="Collapsed">
+                                <Border Width="36" Height="36" CornerRadius="7" BorderThickness="1"
+                                        Background="{DynamicResource SurfaceContainerHighestBrush}"
+                                        BorderBrush="{DynamicResource OutlineVariantBrush}" SnapsToDevicePixels="True">
+                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" Margin="2" />
+                                </Border>
+                                <TextBlock Text="{Binding Title}" FontSize="13.5" Margin="10,0,0,0"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
                             <TextBlock Grid.Column="2" Text="{Binding RelativeTime}" FontSize="11.5" Opacity="0.62"
                                        VerticalAlignment="Center" Margin="8,0,14,0" />
                         </Grid>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsMultiLine}" Value="True">
                                 <Setter TargetName="MultiBadge" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsFiles}" Value="True">
+                                <Setter TargetName="TextRow" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="FileRow" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsImage}" Value="True">
+                                <Setter TargetName="TextRow" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="ImageRow" Property="Visibility" Value="Visible" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
@@ -71,7 +111,7 @@
             <!-- 空状态 -->
             <StackPanel x:Name="EmptyState" Grid.Row="1" Margin="22,10,22,24" Visibility="Collapsed">
                 <TextBlock Text="还没有可粘贴的内容" Style="{StaticResource RowLabel}" />
-                <TextBlock Text="先复制一段文字，再按一次粘贴键就会出现在这里。" Style="{StaticResource RowHint}"
+                <TextBlock Text="先复制一段文字、图片或文件，再按一次粘贴键就会出现在这里。" Style="{StaticResource RowHint}"
                            Margin="0,5,0,0" />
             </StackPanel>
 

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using WhichToPaste.Models;
 using WhichToPaste.Native;
@@ -6,6 +7,8 @@ using WhichToPaste.Services;
 using WhichToPaste.UI;
 using Application = System.Windows.Application;
 using Clipboard = System.Windows.Clipboard;
+using DataFormats = System.Windows.DataFormats;
+using DataObject = System.Windows.DataObject;
 using Point = System.Windows.Point;
 using WindowState = System.Windows.WindowState;
 
@@ -70,12 +73,22 @@ internal sealed class AppController : IDisposable
 
     private void ReadClipboard(int attempt)
     {
-        string? text = null;
+        ClipItem? item = null;
+        BitmapSource? bitmap = null;
         bool locked = false;
 
         try
         {
-            if (Clipboard.ContainsText()) text = Clipboard.GetText();
+            // 优先级：文件 > 文本 > 图片。Excel 这类同时给文本和位图的，取文本更有用；
+            // 截图工具只给位图，于是自然落到图片分支。
+            if (Clipboard.GetDataObject() is not { } data) return;
+
+            if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files)
+                item = new ClipItem { Kind = ClipKind.Files, Files = files };
+            else if (data.GetDataPresent(DataFormats.UnicodeText) && data.GetData(DataFormats.UnicodeText) is string text && !string.IsNullOrWhiteSpace(text))
+                item = new ClipItem { Kind = ClipKind.Text, Text = text.Trim() };
+            else if (data.GetDataPresent(DataFormats.Bitmap) && data.GetData(DataFormats.Bitmap) is BitmapSource source)
+                bitmap = source;
         }
         catch (COMException)
         {
@@ -88,8 +101,44 @@ internal sealed class AppController : IDisposable
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(text)) return;
-        if (History.Add(text)) SyncHookState();
+        if (bitmap is not null)
+        {
+            SaveImageInBackground(bitmap);
+            return;
+        }
+
+        if (item is not null && History.Add(item)) SyncHookState();
+    }
+
+    /// <summary>PNG 编码有点慢，放后台做，完成后回 UI 线程入历史。</summary>
+    private void SaveImageInBackground(BitmapSource source)
+    {
+        BitmapSource frozen;
+        try
+        {
+            frozen = ImageStore.Freeze(source); // 剪贴板位图不能跨线程访问，先拷一份冻结副本
+        }
+        catch (Exception ex) when (ex is NotSupportedException or InvalidOperationException)
+        {
+            return;
+        }
+
+        Task.Run(() =>
+        {
+            if (ImageStore.Save(frozen) is not { } saved) return;
+
+            _dispatcher.InvokeAsync(() =>
+            {
+                var item = new ClipItem
+                {
+                    Kind = ClipKind.Image,
+                    ImageFile = saved.File,
+                    PixelWidth = saved.Width,
+                    PixelHeight = saved.Height,
+                };
+                if (History.Add(item)) SyncHookState();
+            });
+        });
     }
 
     private void RetryIn(int milliseconds, Action action)
@@ -173,33 +222,58 @@ internal sealed class AppController : IDisposable
         HidePicker();
         if (item is null) return;
 
-        if (!TrySetClipboard(item.Text))
-        {
-            return;
-        }
+        if (!TrySetClipboard(item)) return;
 
         // 选中项此刻成了系统剪贴板内容，历史里提到最新。
-        History.Add(item.Text);
+        History.Add(item);
         InputSender.SendPaste();
         SyncHookState();
     }
 
     /// <summary>别的进程可能正占着剪贴板，短暂重试几次。</summary>
-    private static bool TrySetClipboard(string text)
+    private static bool TrySetClipboard(ClipItem item)
     {
         for (int attempt = 0; attempt < 5; attempt++)
         {
             try
             {
-                Clipboard.SetText(text);
+                if (BuildDataObject(item) is not { } data) return false;
+                Clipboard.SetDataObject(data, copy: true);
                 return true;
             }
-            catch (COMException)
+            catch (Exception ex) when (ex is COMException or IOException or NotSupportedException)
             {
                 Thread.Sleep(40);
             }
         }
         return false;
+    }
+
+    /// <summary>按条目类型还原成剪贴板数据；图片文件读不出来时返回 null。</summary>
+    private static DataObject? BuildDataObject(ClipItem item)
+    {
+        var data = new DataObject();
+
+        switch (item.Kind)
+        {
+            case ClipKind.Files:
+                data.SetData(DataFormats.FileDrop, item.Files);
+                // Explorer 靠这个值决定"粘贴"是复制还是移动，缺了它可能变成移动。
+                data.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(1)));
+                break;
+
+            case ClipKind.Image:
+                if (item.ImageFile is null || ImageStore.Load(item.ImageFile) is not { } bitmap) return null;
+                data.SetImage(bitmap);
+                data.SetData("PNG", new MemoryStream(File.ReadAllBytes(ImageStore.PathOf(item.ImageFile))));
+                break;
+
+            default:
+                data.SetText(item.Text);
+                break;
+        }
+
+        return data;
     }
 
     // ---------- 右键：可编辑控件上直接弹选择框 ----------

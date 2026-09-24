@@ -24,23 +24,23 @@ public sealed class HistoryStore
         lock (_gate) return [.. _items];
     }
 
-    /// <summary>记录一次复制。内容与最新一条相同时只刷新时间，不产生重复项。</summary>
-    public bool Add(string? text)
+    /// <summary>记录一次复制。内容与已有条目相同时只把它提到最前，不产生重复项。</summary>
+    public bool Add(ClipItem item)
     {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        text = text.Trim();
+        if (!item.IsUsable) return false;
 
         lock (_gate)
         {
-            int existing = _items.FindIndex(i => i.Text == text);
+            int existing = _items.FindIndex(i => i.Key == item.Key);
             if (existing == 0)
             {
-                _items[0].CopiedAt = DateTimeOffset.Now;
+                _items[0].CopiedAt = item.CopiedAt = DateTimeOffset.Now;
                 return true;
             }
             if (existing > 0) _items.RemoveAt(existing);
 
-            _items.Insert(0, new ClipItem { Text = text, CopiedAt = DateTimeOffset.Now });
+            item.CopiedAt = DateTimeOffset.Now;
+            _items.Insert(0, item);
             Trim();
         }
 
@@ -52,6 +52,7 @@ public sealed class HistoryStore
     {
         lock (_gate) _items.Clear();
         Persist();
+        ImageStore.Clear();
     }
 
     public void Load()
@@ -65,7 +66,7 @@ public sealed class HistoryStore
             lock (_gate)
             {
                 _items.Clear();
-                _items.AddRange(loaded.Where(i => !string.IsNullOrWhiteSpace(i.Text)));
+                _items.AddRange(loaded.Where(i => i.IsUsable));
                 Trim();
             }
         }
@@ -93,6 +94,9 @@ public sealed class HistoryStore
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
             }
+
+            // 落盘后顺手清掉已经被裁掉的图片文件。
+            ImageStore.Prune([.. copy.Select(i => i.ImageFile).OfType<string>()]);
         });
     }
 }

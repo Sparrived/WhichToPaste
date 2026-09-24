@@ -136,7 +136,7 @@
                                 <StackPanel Margin="0,0,16,0">
                                     <TextBlock Text="保留条数" Style="{StaticResource RowLabel}" />
                                     <TextBlock Style="{StaticResource RowHint}" Margin="0,4,0,0"
-                                               Text="1 - 200 条，超出后自动丢弃最旧的记录。" />
+                                               Text="1 - 200 条，超出后自动丢弃最旧的记录，图片一并从本机数据目录清理。" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBox x:Name="LimitBox" Style="{StaticResource OutlinedTextBox}" Width="70"
