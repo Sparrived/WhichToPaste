@@ -37,10 +37,14 @@ public static class AutoStart
         if (string.IsNullOrEmpty(exe)) return string.Empty;
 
         // dotnet run / dotnet xxx.dll 时进程是 dotnet 宿主，要把入口 dll 一起写进去。
+        // 用 AppContext.BaseDirectory 拼路径：单文件发布下 Assembly.Location 是空串。
         if (Path.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
         {
-            string? dll = Assembly.GetEntryAssembly()?.Location;
-            return string.IsNullOrEmpty(dll) ? string.Empty : $"\"{exe}\" \"{dll}\"";
+            string? name = Assembly.GetEntryAssembly()?.GetName().Name;
+            if (string.IsNullOrEmpty(name)) return string.Empty;
+
+            string dll = Path.Combine(AppContext.BaseDirectory, name + ".dll");
+            return File.Exists(dll) ? $"\"{exe}\" \"{dll}\"" : string.Empty;
         }
 
         return $"\"{exe}\"";
