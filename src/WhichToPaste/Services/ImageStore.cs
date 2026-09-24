@@ -10,6 +10,11 @@ namespace WhichToPaste.Services;
 /// </summary>
 internal static class ImageStore
 {
+    private static readonly Lock Gate = new();
+
+    /// <summary>已编码落盘、但还没进历史的图片。这段时间里它是"无主"的，清理时要放过。</summary>
+    private static readonly HashSet<string> Pending = new(StringComparer.OrdinalIgnoreCase);
+
     public static string Folder => Path.Combine(SettingsStore.DataDirectory, "images");
 
     public static string PathOf(string fileName) => Path.Combine(Folder, fileName);
@@ -41,6 +46,7 @@ internal static class ImageStore
             string path = PathOf(name);
             if (!File.Exists(path)) File.WriteAllBytes(path, buffer.ToArray());
 
+            lock (Gate) Pending.Add(name);
             return (name, source.PixelWidth, source.PixelHeight);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -72,6 +78,12 @@ internal static class ImageStore
         }
     }
 
+    /// <summary>条目已入历史，此后这个文件受历史保护，可以被正常回收。</summary>
+    public static void Claim(string fileName)
+    {
+        lock (Gate) Pending.Remove(fileName);
+    }
+
     /// <summary>删掉不再被历史引用的图片文件。</summary>
     public static void Prune(IReadOnlyCollection<string> keep)
     {
@@ -80,6 +92,8 @@ internal static class ImageStore
             if (!Directory.Exists(Folder)) return;
 
             var alive = new HashSet<string>(keep, StringComparer.OrdinalIgnoreCase);
+            lock (Gate) alive.UnionWith(Pending);
+
             foreach (string path in Directory.EnumerateFiles(Folder, "*.png"))
             {
                 if (!alive.Contains(Path.GetFileName(path))) File.Delete(path);
@@ -94,6 +108,7 @@ internal static class ImageStore
     {
         try
         {
+            lock (Gate) Pending.Clear();
             if (Directory.Exists(Folder)) Directory.Delete(Folder, recursive: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
