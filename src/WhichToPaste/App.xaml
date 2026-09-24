@@ -1,0 +1,14 @@
+<Application x:Class="WhichToPaste.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 索引 0 是配色，运行时按主题整体替换 -->
+                <ResourceDictionary Source="UI/Theme.Light.xaml" />
+                <ResourceDictionary Source="UI/Theme.Base.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
