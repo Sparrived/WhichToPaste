@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>WhichToPaste</RootNamespace>
+    <AssemblyName>WhichToPaste</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <Product>WhichToPaste</Product>
+    <Description>剪贴板历史选择器：复制即记录，粘贴时挑一条再粘。</Description>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- 托盘图标借用 WinForms，但 DPI 感知走 WPF 的 app.manifest，不需要 WinForms 的开关 -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms 的隐式 using 不含 System.IO，这里补回来 -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+</Project>
