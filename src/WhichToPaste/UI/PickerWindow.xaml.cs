@@ -92,16 +92,9 @@ public partial class PickerWindow : Window
         int width = (int)Math.Ceiling(ActualWidth * scale);
         int height = (int)Math.Ceiling(ActualHeight * scale);
         int margin = (int)Math.Round(ShadowMargin * scale);
-        Win32.RECT work = WorkAreaAt(anchor);
+        Win32.GetCursorPos(out Win32.POINT cursor);
 
-        int x = (int)anchor.X - margin;
-        int y = (int)anchor.Y + 6 - margin;
-
-        // 下方放不下就翻到插入符上方，左右再夹进工作区。
-        if (y + height > work.Bottom) y = (int)anchor.Y - height - 6 + margin;
-        if (x + width > work.Right) x = work.Right - width;
-        x = Math.Max(x, work.Left);
-        y = Math.Max(y, work.Top);
+        (int x, int y) = PickerPlacement.Choose(anchor, cursor, width, height, margin, WorkAreaAt(anchor));
 
         Win32.SetWindowPos(handle, IntPtr.Zero, x, y, 0, 0,
             Win32.SWP_NOSIZE | Win32.SWP_NOZORDER | Win32.SWP_NOACTIVATE);

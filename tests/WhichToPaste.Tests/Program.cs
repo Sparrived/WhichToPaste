@@ -4,12 +4,14 @@ using System.Windows.Media.Imaging;
 using WhichToPaste.Models;
 using WhichToPaste.Native;
 using WhichToPaste.Services;
+using WhichToPaste.UI;
+using Point = System.Windows.Point;
 
 namespace WhichToPaste.Tests;
 
 /// <summary>
 /// 不依赖测试框架的自检：跑完打印结果，有失败就以退出码 1 结束。
-/// 覆盖快捷键解析、条目语义、历史去重/裁剪/落盘与图片清理这些不看界面也能验的逻辑。
+/// 覆盖快捷键解析、条目语义、历史去重/裁剪/落盘、图片清理与选择框摆放这些不看界面也能验的逻辑。
 /// </summary>
 internal static class Program
 {
@@ -29,6 +31,7 @@ internal static class Program
         ClipItemChecks();
         HistoryChecks();
         ImageStoreChecks();
+        PickerPlacementChecks();
 
         Console.WriteLine();
         Console.WriteLine(_failed == 0 ? "全部通过" : $"失败 {_failed} 项");
@@ -174,6 +177,26 @@ internal static class Program
         history.Clear();
         Check("清空历史会清空图片目录", WaitFor(() => !ImageStore.Exists(other.Value.File), 3000));
     }
+
+    // ---------- 选择框摆放 ----------
+
+    private static void PickerPlacementChecks()
+    {
+        Section("PickerPlacement");
+
+        // 1000×800 的工作区；框连阴影 460×300，四周阴影留白 14（与 PickerWindow.ShadowMargin 一致）。
+        var work = new Win32.RECT { Left = 0, Top = 0, Right = 1000, Bottom = 800 };
+
+        Eq("插入符下方放得下就贴下方", (486, 292), Placed(new Point(500, 300), new Win32.POINT(500, 300), work));
+        Eq("贴右边时整框夹回工作区", (540, 292), Placed(new Point(950, 300), new Win32.POINT(950, 300), work));
+        Eq("下方放不下就翻到插入符上方", (486, 408), Placed(new Point(500, 700), new Win32.POINT(500, 700), work));
+        Eq("鼠标压在框上时改摆到鼠标下方", (486, 192), Placed(new Point(500, 100), new Win32.POINT(500, 200), work));
+        Eq("鼠标下方放不下就翻到鼠标上方", (486, 308), Placed(new Point(500, 700), new Win32.POINT(500, 600), work));
+        Eq("鼠标下方只差一点就夹到底边", (486, 500), Placed(new Point(500, 300), new Win32.POINT(500, 510), work));
+    }
+
+    private static (int X, int Y) Placed(Point anchor, Win32.POINT cursor, Win32.RECT work) =>
+        PickerPlacement.Choose(anchor, cursor, 460, 300, 14, work);
 
     // ---------- 小工具 ----------
 
