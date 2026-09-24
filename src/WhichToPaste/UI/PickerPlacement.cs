@@ -1,5 +1,6 @@
 using System.Windows;
 using WhichToPaste.Native;
+using Point = System.Windows.Point;
 
 namespace WhichToPaste.UI;
 
