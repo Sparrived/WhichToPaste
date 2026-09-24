@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Material Design 3 基线配色 · 深色 -->
+    <Color x:Key="PrimaryColor">#D0BCFF</Color>
+    <Color x:Key="OnPrimaryColor">#381E72</Color>
+    <Color x:Key="PrimaryContainerColor">#4F378B</Color>
+    <Color x:Key="OnPrimaryContainerColor">#EADDFF</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="OnPrimaryBrush" Color="{StaticResource OnPrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryContainerBrush" Color="{StaticResource PrimaryContainerColor}" />
+    <SolidColorBrush x:Key="OnPrimaryContainerBrush" Color="{StaticResource OnPrimaryContainerColor}" />
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#141218" />
+    <SolidColorBrush x:Key="SurfaceContainerLowBrush" Color="#1D1B20" />
+    <SolidColorBrush x:Key="SurfaceContainerBrush" Color="#211F26" />
+    <SolidColorBrush x:Key="SurfaceContainerHighBrush" Color="#2B2930" />
+    <SolidColorBrush x:Key="SurfaceContainerHighestBrush" Color="#36343B" />
+
+    <SolidColorBrush x:Key="OnSurfaceBrush" Color="#E6E0E9" />
+    <SolidColorBrush x:Key="OnSurfaceVariantBrush" Color="#CAC4D0" />
+    <SolidColorBrush x:Key="OutlineBrush" Color="#938F99" />
+    <SolidColorBrush x:Key="OutlineVariantBrush" Color="#49454F" />
+
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#33D0BCFF" />
+    <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#4DD0BCFF" />
+    <SolidColorBrush x:Key="ScrimBrush" Color="#66000000" />
+
+    <SolidColorBrush x:Key="ErrorBrush" Color="#F2B8B5" />
+    <SolidColorBrush x:Key="ShadowBrush" Color="#000000" />
+
+</ResourceDictionary>
