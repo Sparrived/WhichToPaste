@@ -166,7 +166,7 @@ internal sealed class AppController : IDisposable
         {
             case HookKeyAction.PasteRequested:
                 if (_picker?.IsVisible == true) CommitPaste();
-                else ShowPicker(CaretLocator.CaretPoint());
+                else ShowPicker();
                 break;
 
             case HookKeyAction.MoveUp:
@@ -184,7 +184,7 @@ internal sealed class AppController : IDisposable
         }
     }
 
-    private void ShowPicker(Point anchor)
+    private void ShowPicker()
     {
         if (Settings.Paused) return;
 
@@ -198,7 +198,7 @@ internal sealed class AppController : IDisposable
             _picker.IsVisibleChanged += (_, _) => SyncHookState();
         }
 
-        _picker.ShowItems(items, anchor, Settings);
+        _picker.ShowItems(items, Settings);
         SyncHookState();
     }
 
@@ -282,11 +282,11 @@ internal sealed class AppController : IDisposable
     {
         if (Settings.Paused || !Settings.TakeOverRightClick || History.IsEmpty) return;
 
-        var anchor = new Point(point.X, point.Y);
-        _ = Task.Run(() => _hooks.ArmRightClick(CaretLocator.IsEditableAt(anchor)));
+        var target = new Point(point.X, point.Y);
+        _ = Task.Run(() => _hooks.ArmRightClick(CaretLocator.IsEditableAt(target)));
     }
 
-    private void OnRightButtonUp(Win32.POINT point) => _dispatcher.InvokeAsync(() =>
+    private void OnRightButtonUp(Win32.POINT _) => _dispatcher.InvokeAsync(() =>
     {
         if (Settings.Paused) return;
         if (_picker?.IsVisible == true)
@@ -294,7 +294,7 @@ internal sealed class AppController : IDisposable
             HidePicker();
             return;
         }
-        ShowPicker(new Point(point.X, point.Y));
+        ShowPicker(); // 摆放以鼠标指针为基准，落点即指针位置
     });
 
     private void OnLeftButtonDown(Win32.POINT point) => _dispatcher.InvokeAsync(() =>

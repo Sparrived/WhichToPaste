@@ -9,12 +9,11 @@ using WhichToPaste.Services;
 using Brush = System.Windows.Media.Brush;
 using FontFamily = System.Windows.Media.FontFamily;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
-using Point = System.Windows.Point;
 
 namespace WhichToPaste.UI;
 
 /// <summary>
-/// 贴输入框弹出的选择框。它永远不抢焦点（WS_EX_NOACTIVATE），
+/// 贴鼠标指针弹出的选择框。它永远不抢焦点（WS_EX_NOACTIVATE），
 /// 键盘操作全靠全局钩子转发进来，这样原输入框的插入符不会丢。
 /// </summary>
 public partial class PickerWindow : Window
@@ -41,7 +40,7 @@ public partial class PickerWindow : Window
         set => ItemList.SelectedItem = value;
     }
 
-    public void ShowItems(IReadOnlyList<ClipItem> items, Point anchor, Settings settings)
+    public void ShowItems(IReadOnlyList<ClipItem> items, Settings settings)
     {
         ItemList.ItemsSource = items;
 
@@ -55,7 +54,7 @@ public partial class PickerWindow : Window
 
         Show();
         UpdateLayout();
-        PositionAt(anchor);
+        PositionAtCursor();
     }
 
     public void MoveSelection(int delta)
@@ -83,28 +82,26 @@ public partial class PickerWindow : Window
             (IntPtr)(exStyle.ToInt64() | Win32.WS_EX_NOACTIVATE | Win32.WS_EX_TOOLWINDOW));
     }
 
-    private void PositionAt(Point anchor)
+    private void PositionAtCursor()
     {
         IntPtr handle = new WindowInteropHelper(this).Handle;
-        if (handle == IntPtr.Zero) return;
+        if (handle == IntPtr.Zero || !Win32.GetCursorPos(out Win32.POINT cursor)) return;
 
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
         int width = (int)Math.Ceiling(ActualWidth * scale);
         int height = (int)Math.Ceiling(ActualHeight * scale);
         int margin = (int)Math.Round(ShadowMargin * scale);
-        Win32.GetCursorPos(out Win32.POINT cursor);
 
-        (int x, int y) = PickerPlacement.Choose(anchor, cursor, width, height, margin, WorkAreaAt(anchor));
+        (int x, int y) = PickerPlacement.Choose(cursor, width, height, margin, WorkAreaAt(cursor));
 
         Win32.SetWindowPos(handle, IntPtr.Zero, x, y, 0, 0,
             Win32.SWP_NOSIZE | Win32.SWP_NOZORDER | Win32.SWP_NOACTIVATE);
     }
 
-    private static Win32.RECT WorkAreaAt(Point anchor)
+    private static Win32.RECT WorkAreaAt(Win32.POINT point)
     {
         var monitor = new Win32.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Win32.MONITORINFO>() };
-        IntPtr handle = Win32.MonitorFromPoint(
-            new Win32.POINT((int)anchor.X, (int)anchor.Y), Win32.MONITOR_DEFAULTTONEAREST);
+        IntPtr handle = Win32.MonitorFromPoint(point, Win32.MONITOR_DEFAULTTONEAREST);
 
         if (handle != IntPtr.Zero && Win32.GetMonitorInfoW(handle, ref monitor)) return monitor.rcWork;
 

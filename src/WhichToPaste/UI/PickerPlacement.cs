@@ -1,6 +1,4 @@
-using System.Windows;
 using WhichToPaste.Native;
-using Point = System.Windows.Point;
 
 namespace WhichToPaste.UI;
 
@@ -9,38 +7,36 @@ namespace WhichToPaste.UI;
 /// </summary>
 internal static class PickerPlacement
 {
-    /// <summary>卡片与插入符 / 鼠标之间的空隙（物理像素）。</summary>
+    /// <summary>卡片与鼠标指针之间的空隙（物理像素）。</summary>
     private const int Gap = 6;
 
     /// <summary>
-    /// 先贴插入符：默认摆在下方，下方放不下就翻到上方，再夹进工作区保证整框可见。
-    /// 若这样摆会让鼠标落在框上——插入符离鼠标较远、或贴到屏幕边缘被夹回来时都会发生——
-    /// 就改摆到鼠标的下方 / 上方 / 右侧 / 左侧：宁可离插入符远一点，也不让鼠标指着框，
-    /// 免得刚弹出来就被鼠标指到，一动或一点就误选了别的条目。
+    /// 以鼠标指针为基准摆放：优先摆在指针下方，下方放不下就翻到上方，再夹进工作区保证整框可见。
+    /// 贴着屏幕边缘时"翻到上方"可能又被夹回来、正好把指针框在里面，这时改摆到指针的
+    /// 下 / 上 / 右 / 左空侧。指针始终落在卡片之外，所以弹窗刚显示时鼠标不会指着它，
+    /// 一动或一点也不会误选了别的条目。
     /// </summary>
-    /// <param name="anchor">插入符（右键时是落点）位置，物理像素。</param>
     /// <param name="cursor">当前鼠标位置，物理像素。</param>
     /// <param name="width">窗口宽度，含四周阴影留白，物理像素。</param>
     /// <param name="height">窗口高度，含四周阴影留白，物理像素。</param>
     /// <param name="margin">阴影留白，物理像素。</param>
-    /// <param name="work">所在显示器的工作区，物理像素。</param>
-    public static (int X, int Y) Choose(
-        Point anchor, Win32.POINT cursor, int width, int height, int margin, Win32.RECT work)
+    /// <param name="work">指针所在显示器的工作区，物理像素。</param>
+    public static (int X, int Y) Choose(Win32.POINT cursor, int width, int height, int margin, Win32.RECT work)
     {
         int maxX = Math.Max(work.Left, work.Right - width);
         int maxY = Math.Max(work.Top, work.Bottom - height);
 
-        int y = (int)anchor.Y + Gap - margin;
-        if (y + height > work.Bottom) y = (int)anchor.Y - Gap - height + margin;
+        int y = cursor.Y + Gap - margin;
+        if (y + height > work.Bottom) y = cursor.Y - Gap - height + margin;
 
         (int X, int Y) preferred =
-            (Math.Clamp((int)anchor.X - margin, work.Left, maxX), Math.Clamp(y, work.Top, maxY));
+            (Math.Clamp(cursor.X - margin, work.Left, maxX), Math.Clamp(y, work.Top, maxY));
 
         if (!CursorOnCard(cursor, preferred, width, height, margin)) return preferred;
 
-        // 鼠标当道：依次试鼠标的下、上、右、左，各夹进工作区后看还压不压鼠标。
-        // 这四个方向是"躲开鼠标"的全部可能（框要么在鼠标上/下，要么在鼠标左/右），
-        // 所以只要存在既完整可见、又不压鼠标的摆法，这里就一定找得到。
+        // 指针当道：依次试指针的下、上、右、左，各夹进工作区后看还压不压指针。
+        // 这四个方向是"躲开指针"的全部可能（框要么在指针上/下，要么在指针左/右），
+        // 所以只要存在既完整可见、又不压指针的摆法，这里就一定找得到。
         (int X, int Y)[] escapes =
         [
             (preferred.X, cursor.Y + Gap - margin),
@@ -55,7 +51,7 @@ internal static class PickerPlacement
             if (!CursorOnCard(cursor, spot, width, height, margin)) return spot;
         }
 
-        return preferred; // 框比工作区还大这类极端情况：四个方向都躲不开，维持原位总比乱跳好
+        return preferred; // 框比工作区的一半还大这类极端情况：四个方向都躲不开，维持原位总比乱跳好
     }
 
     /// <summary>鼠标是否落在框的可见部分上（窗口矩形去掉四周的阴影留白）。</summary>

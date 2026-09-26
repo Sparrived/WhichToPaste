@@ -121,9 +121,6 @@ internal static class Win32
     public static extern bool GetCursorPos(out POINT lpPoint);
 
     [DllImport("user32.dll")]
-    public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
-
-    [DllImport("user32.dll")]
     public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO pgui);
 
     [DllImport("user32.dll", SetLastError = true)]

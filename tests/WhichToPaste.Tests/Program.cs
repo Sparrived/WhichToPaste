@@ -5,7 +5,6 @@ using WhichToPaste.Models;
 using WhichToPaste.Native;
 using WhichToPaste.Services;
 using WhichToPaste.UI;
-using Point = System.Windows.Point;
 
 namespace WhichToPaste.Tests;
 
@@ -187,16 +186,19 @@ internal static class Program
         // 1000×800 的工作区；框连阴影 460×300，四周阴影留白 14（与 PickerWindow.ShadowMargin 一致）。
         var work = new Win32.RECT { Left = 0, Top = 0, Right = 1000, Bottom = 800 };
 
-        Eq("插入符下方放得下就贴下方", (486, 292), Placed(new Point(500, 300), new Win32.POINT(500, 300), work));
-        Eq("贴右边时整框夹回工作区", (540, 292), Placed(new Point(950, 300), new Win32.POINT(950, 300), work));
-        Eq("下方放不下就翻到插入符上方", (486, 408), Placed(new Point(500, 700), new Win32.POINT(500, 700), work));
-        Eq("鼠标压在框上时改摆到鼠标下方", (486, 192), Placed(new Point(500, 100), new Win32.POINT(500, 200), work));
-        Eq("鼠标下方放不下就翻到鼠标上方", (486, 308), Placed(new Point(500, 700), new Win32.POINT(500, 600), work));
-        Eq("鼠标下方只差一点就夹到底边", (486, 500), Placed(new Point(500, 300), new Win32.POINT(500, 510), work));
+        Eq("指针下方放得下就贴下方", (486, 292), Placed(500, 300, work));
+        Eq("贴右边时整框夹回工作区", (540, 292), Placed(950, 300, work));
+        Eq("下方放不下就翻到指针上方", (486, 408), Placed(500, 700, work));
+        Eq("鼠标在卡片外的空隙里，不压卡片", (486, 212), Placed(500, 220, work));
+        Eq("框比工作区还高时挪到指针的空侧", (492, 0), TallPlaced(500, 300));
+
+        // 最高 560 的框落到 300 高的工作区：贴底被夹回来正好罩住指针，必须换到指针上方。
+        static (int X, int Y) TallPlaced(int x, int y) =>
+            PickerPlacement.Choose(new Win32.POINT(x, y), 460, 620, 14, new Win32.RECT { Left = 0, Top = 0, Right = 1000, Bottom = 300 });
     }
 
-    private static (int X, int Y) Placed(Point anchor, Win32.POINT cursor, Win32.RECT work) =>
-        PickerPlacement.Choose(anchor, cursor, 460, 300, 14, work);
+    private static (int X, int Y) Placed(int x, int y, Win32.RECT work) =>
+        PickerPlacement.Choose(new Win32.POINT(x, y), 460, 300, 14, work);
 
     // ---------- 小工具 ----------
 
