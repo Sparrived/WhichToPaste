@@ -122,6 +122,29 @@ begin
   end;
 end;
 
+{ 快捷方式通常由 Inno 自动删除；个别时候会被安全软件或资源管理器短暂占用，
+  卸载结束前再补删一次，避免留下指向已删除程序的死链接 }
+procedure CleanupShortcut(Shortcut: String);
+var
+  Attempt: Integer;
+begin
+  for Attempt := 1 to 3 do
+  begin
+    if not FileExists(Shortcut) then
+      Exit;
+    DeleteFile(Shortcut);
+    Sleep(150);
+  end;
+  if FileExists(Shortcut) then
+    Log('快捷方式未能删除：' + Shortcut);
+end;
+
+procedure CleanupLeftoverShortcuts;
+begin
+  CleanupShortcut(ExpandConstant('{autoprograms}\{#AppName}.lnk'));
+  CleanupShortcut(ExpandConstant('{autodesktop}\{#AppName}.lnk'));
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: String;
@@ -135,6 +158,7 @@ begin
 
     usPostUninstall:
       begin
+        CleanupLeftoverShortcuts;
         DataDir := ExpandConstant('{userappdata}\WhichToPaste');
         if DirExists(DataDir) then
         begin
