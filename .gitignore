@@ -4,3 +4,6 @@ obj/
 *.user
 publish/
 artifacts/
+# 构建工具与生成物（安装包）
+.tools/
+installer/assets/
