@@ -9,8 +9,38 @@
 
 ## 运行要求
 
-- Windows 10 / 11（x64），已安装 **.NET 10 Desktop Runtime**
-- 或用自包含发布，单文件免运行时（见下）
+- Windows 10 / 11（x64）
+- 装安装包不用预装任何运行时；从源码跑需要 **.NET 10 Desktop Runtime**
+
+## 安装包
+
+`artifacts\WhichToPaste-Setup-<版本>-x64.exe` 是构建好的安装包（约 49 MB，自包含运行时）。
+
+- **按当前用户安装**到 `%LOCALAPPDATA%\Programs\WhichToPaste`，不需要管理员权限，也不弹 UAC
+- 开始菜单始终创建快捷方式；桌面快捷方式在安装时勾选（默认不勾）
+- 卸载在「设置 → 应用」里，或运行安装目录的 `unins000.exe`；卸载会先结束正在运行的程序，
+  并清掉程序自己写的开机自启注册表项
+- 历史记录与设置仍在 `%APPDATA%\WhichToPaste`：卸载时询问是否删除，**静默卸载默认保留**；
+  加 `/DELETEUSERDATA` 可静默删除（例如 `unins000.exe /VERYSILENT /DELETEUSERDATA`）
+- 安装包没有代码签名，首次运行 Setup.exe 可能被 SmartScreen 拦一下（选“仍要运行”）
+
+### 构建安装包
+
+需要 .NET 10 SDK 和 **Inno Setup 6/7**（`winget install JRSoftware.InnoSetup`）。
+也可以用便携版编译器：解压到 `.tools\innosetup-6.0.5\`，或用 `-IsccPath` 指定 `ISCC.exe`。
+
+```powershell
+# 生成图标与向导图 → 自包含发布 → 编译安装包
+powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1
+
+# 只重新编译安装包（复用已有发布产物）
+powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1 -SkipPublish
+```
+
+版本号取自 `src/WhichToPaste/WhichToPaste.csproj` 的 `<Version>`；安装脚本在
+`installer/WhichToPaste.iss`，中文界面来自 `installer/lang/ChineseSimplified.isl`。
+`installer/make-icon.ps1` 只用 .NET 自带的 `System.Drawing` 生成多尺寸 ICO 和安装向导品牌图，
+产物写到 `installer/assets/`，不入库。
 
 ## 构建与运行
 
